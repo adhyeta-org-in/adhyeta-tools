@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MPL-2.0
+
+import argparse
+import os
+import subprocess
+import sys
+
+# ########################################
+# TUNABLE CONFIG
+# ########################################
+MODEL_BASE = os.environ.get(
+    "MODEL_BASE", "/path/to/your/gguf/dir"
+)  # Change this to your actual path
+MODEL = f"{MODEL_BASE}/Qwen3VL-8B-Instruct-Q8_0.gguf"
+MM_PROJ = f"{MODEL_BASE}/mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf"
+DEVICE = "Vulkan0"
+HOST = "127.0.0.1"
+PORT = 5001
+# ########################################
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Launch llama-server with adjustable settings"
+    )
+
+    parser.add_argument(
+        "--parallel", type=int, default=4, help="Number of parallel slots (default: 4)"
+    )
+
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=1024,
+        help="Batch size for prompt processing (default: 1024)",
+    )
+
+    parser.add_argument(
+        "--ctx-size-per",
+        type=int,
+        default=8192,
+        help="Context size per slot (default: 8192)",
+    )
+
+    try:
+        return parser.parse_args()
+    except SystemExit:
+        sys.exit(1)
+
+
+def main():
+    args = parse_args()
+
+    # Calculate total context
+    ctx_size = args.parallel * args.ctx_size_per
+
+    # Build command
+    cmd = [
+        "llama-server",
+        "--model",
+        MODEL,
+        "--mmproj",
+        MM_PROJ,
+        "--batch-size",
+        str(args.batch_size),
+        "--ctx-size",
+        str(ctx_size),
+        "--parallel",
+        str(args.parallel),
+        "--gpu-layers",
+        "99",
+        "--device",
+        DEVICE,
+        "--image-min-tokens",
+        "1024",
+        "--host",
+        HOST,
+        "--port",
+        str(PORT),
+    ]
+
+    # Show configuration
+    print("\n🚀 Launching llama-server with:")
+    print(f"   Model: {MODEL}")
+    print(f"   Parallel slots: {args.parallel}")
+    print(f"   Batch size: {args.batch_size}")
+    print(f"   Context per slot: {args.ctx_size_per}")
+    print(f"   Total context: {ctx_size}")
+    print(f"   Device: {DEVICE}")
+    print(f"   Port: {PORT}")
+
+    print("\n🔄 Starting server... (Ctrl+C to stop)\n")
+
+    try:
+        subprocess.run(cmd)
+    except KeyboardInterrupt:
+        print("\n\n🛑 Server stopped by user")
+    except FileNotFoundError:
+        print("\n❌ Error: 'llama-server' not found in PATH")
+        print("   Make sure llama.cpp is installed and in your PATH")
+        return 1
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        return 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
