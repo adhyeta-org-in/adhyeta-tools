@@ -1,0 +1,7 @@
+.ignore/
+.python-version
+.venv/
+.pytest_cache/
+__pycache__/
+*.lock
+*.env
