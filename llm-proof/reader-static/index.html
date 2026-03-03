@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Proofreader</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div id="topbar">
+      <span id="page-indicator"></span>
+      <span id="status" aria-live="polite"></span>
+
+      <button id="btn-prev" title="Alt+Left">← Prev</button>
+      <button id="btn-next" title="Alt+Right">Next →</button>
+      <button id="btn-swap" title="Swap panels">Swap</button>
+      <button id="btn-save" disabled title="Ctrl/⌘ + S">Save</button>
+      <button
+        id="btn-help"
+        class="btn-help"
+        title="Keyboard shortcuts (?)"
+        aria-haspopup="dialog"
+        aria-controls="help-overlay"
+      >
+        ?
+      </button>
+      <span id="dirty-dot" aria-hidden="true"></span>
+    </div>
+
+    <div id="help-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
+      <div class="modal" role="document">
+        <div class="modal-head">
+          <div id="help-title">Keyboard shortcuts</div>
+          <button id="btn-help-close" class="btn-close" title="Close (Esc)" aria-label="Close help">×</button>
+        </div>
+        <div class="modal-body">
+          <ul class="help-list">
+            <li><kbd>Alt</kbd> + <kbd>←</kbd> = Previous page</li>
+            <li><kbd>Alt</kbd> + <kbd>→</kbd> = Next page</li>
+            <li><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>S</kbd> = Save</li>
+            <li><kbd>Shift</kbd> + mouse wheel (on image) = Zoom image (min = fit size)</li>
+            <li><kbd>Shift</kbd> + mouse wheel (on text) = Increase/decrease font size</li>
+            <li>Mouse drag on image Pan (only when zoom &gt; 1)</li>
+            <li>Swap = Swap image/text panels</li>
+            <li><kbd>?</kbd> Toggle this help</li>
+            <li><kbd>Esc</kbd> Close</li>
+            <li>Edit URL hash like <kbd>#page_stem</kbd> to jump</li>
+          </ul>
+          <div class="help-note">Tip: Zoom is centered under the mouse cursor.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panels">
+      <div id="panel-a" class="panel"></div>
+      <div id="resizer"></div>
+      <div id="panel-b" class="panel"></div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,248 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    --editor-font-size: 0.93rem;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    font-family: system-ui, sans-serif;
+    background: #1a1a1a;
+    color: #eee;
+    overflow: hidden;
+}
+
+#topbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #252525;
+    border-bottom: 1px solid #3a3a3a;
+    flex-shrink: 0;
+    user-select: none;
+
+    /* Right-align the UI controls */
+    justify-content: flex-end;
+}
+
+#topbar button {
+    padding: 4px 12px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background: #333;
+    color: #eee;
+    cursor: pointer;
+    font-size: 0.88rem;
+}
+
+#topbar button:hover:not(:disabled) {
+    background: #444;
+}
+
+#topbar button:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+#btn-save:not(:disabled) {
+    border-color: #d4a017;
+    color: #d4a017;
+    font-weight: 600;
+}
+
+#page-indicator {
+    font-size: 0.88rem;
+    min-width: 64px;
+    text-align: center;
+    color: #aaa;
+}
+
+#status {
+    font-size: 0.88rem;
+    min-width: 120px;
+    text-align: right;
+    color: #888;
+}
+
+#status[data-mode="dirty"] {
+    color: #d4a017;
+}
+
+#status[data-mode="saving"] {
+    color: #9bb7ff;
+}
+
+#status[data-mode="ok"] {
+    color: #9fe6b8;
+}
+
+#status[data-mode="error"] {
+    color: #ff8a8a;
+}
+
+/* Help button a bit tighter */
+#btn-help.btn-help {
+    width: 30px;
+    padding: 4px 0;
+    font-weight: 700;
+}
+
+/* Dirty dot — amber circle, only visible when dirty */
+#dirty-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #d4a017;
+    opacity: 0;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+}
+
+#dirty-dot.visible {
+    opacity: 1;
+}
+
+#panels {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.panel {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 12px;
+    min-width: 0;
+}
+
+.panel img {
+    max-width: 100%;
+    max-height: calc(100vh - 52px);
+    object-fit: contain;
+    display: block;
+}
+
+/* Zoom/pan behavior */
+.panel img.page-image {
+    transform-origin: 0 0;
+    user-select: none;
+    touch-action: none;
+    will-change: transform;
+}
+
+.panel textarea {
+    width: 100%;
+    height: calc(100vh - 76px);
+    background: #111;
+    color: #ddd;
+    border: 1px solid #2e2e2e;
+    border-radius: 4px;
+    padding: 14px 16px;
+    font-family: "Noto Sans Devanagari", "Noto Sans", sans-serif;
+    font-size: var(--editor-font-size, 0.93rem);
+    line-height: 1.65;
+    resize: none;
+    outline: none;
+    tab-size: 2;
+}
+
+.panel textarea:focus {
+    border-color: #444;
+}
+
+#resizer {
+    width: 5px;
+    background: #2a2a2a;
+    cursor: col-resize;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+#resizer:hover,
+#resizer.dragging {
+    background: #555;
+}
+
+/* ── Help modal ─────────────────────────────────────────────────────────────── */
+
+.hidden {
+    display: none !important;
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 56px 16px 16px;
+    z-index: 9999;
+}
+
+.modal {
+    width: min(560px, 100%);
+    background: #252525;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+}
+
+.modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #3a3a3a;
+}
+
+#help-title {
+    font-weight: 700;
+    color: #eee;
+}
+
+.btn-close {
+    width: 32px;
+    padding: 4px 0;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.modal-body {
+    padding: 12px;
+    color: #ddd;
+}
+
+.help-list {
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    border: 1px solid #555;
+    border-bottom-color: #444;
+    background: #1f1f1f;
+    border-radius: 6px;
+    font-size: 0.85em;
+    color: #eee;
+}
+
+.help-note {
+    margin-top: 10px;
+    color: #aaa;
+    font-size: 0.9rem;
+}

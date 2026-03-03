@@ -1,0 +1,128 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = [
+#   "starlette",
+#   "uvicorn",
+#   "aiofiles",
+# ]
+# ///
+# SPDX-License-Identifier: MPL-2.0
+
+import argparse
+import sys
+from pathlib import Path
+
+import aiofiles
+import uvicorn
+from starlette.applications import Starlette
+from starlette.requests import Request
+from starlette.responses import FileResponse, JSONResponse, Response
+from starlette.routing import Mount, Route
+from starlette.staticfiles import StaticFiles
+
+STATIC_DIR = Path(__file__).parent / "reader-static"
+IMAGE_EXTS = (".jpg", ".jpeg", ".png")
+HOST = "127.0.0.1"
+PORT = 5003
+
+
+def create_app(images_dir: Path, output_dir: Path) -> Starlette:
+
+    def get_image_path(stem: str) -> Path | None:
+        for ext in IMAGE_EXTS:
+            p = images_dir / f"{stem}{ext}"
+            if p.exists():
+                return p
+        return None
+
+    def get_sorted_stems() -> list[str]:
+        return sorted(
+            p.stem for p in images_dir.iterdir() if p.suffix.lower() in IMAGE_EXTS
+        )
+
+    _stems_cache: list[str] | None = None
+
+    def stems() -> list[str]:
+        nonlocal _stems_cache
+        if _stems_cache is None:
+            _stems_cache = get_sorted_stems()
+        return _stems_cache
+
+    async def pages(request: Request):
+        return JSONResponse({"pages": stems()})
+
+    async def get_image(request: Request):
+        stem = request.path_params["stem"]
+        path = get_image_path(stem)
+        if not path:
+            return Response("Not found", status_code=404)
+        return FileResponse(path)
+
+    async def get_text(request: Request):
+        stem = request.path_params["stem"]
+        md_path = output_dir / f"{stem}.md"
+        if not md_path.exists():
+            return JSONResponse({"content": ""})
+        async with aiofiles.open(md_path, "r", encoding="utf-8") as f:
+            content = await f.read()
+        return JSONResponse({"content": content})
+
+    async def save_text(request: Request):
+        stem = request.path_params["stem"]
+        if stem not in stems():
+            return Response("Not found", status_code=404)
+        body = await request.json()
+        content = body.get("content", "")
+        md_path = output_dir / f"{stem}.md"
+        async with aiofiles.open(md_path, "w", encoding="utf-8") as f:
+            await f.write(content)
+        return JSONResponse({"ok": True})
+
+    routes = [
+        Route("/pages", pages),
+        Route("/image/{stem}", get_image),
+        Route("/text/{stem}", get_text),
+        Route("/text/{stem}", save_text, methods=["POST"]),
+        Mount("/", StaticFiles(directory=STATIC_DIR, html=True)),
+    ]
+
+    return Starlette(routes=routes)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Proofreader")
+    parser.add_argument("project", type=Path, help="Path to project directory")
+    args = parser.parse_args()
+
+    project_dir = args.project.resolve()
+    images_dir = project_dir / "images"
+    output_dir = project_dir / "output"
+
+    for d, name in [
+        (project_dir, "project"),
+        (images_dir, "images"),
+        (output_dir, "output"),
+    ]:
+        if not d.is_dir():
+            print(f"Error: {name} directory not found: {d}", file=sys.stderr)
+            sys.exit(1)
+
+    image_stems = sorted(
+        p.stem
+        for p in images_dir.iterdir()
+        if p.suffix.lower() in (".jpg", ".jpeg", ".png")
+    )
+    for stem in image_stems:
+        if not (output_dir / f"{stem}.md").exists():
+            print(f"Warning: no .md for {stem} — will be created on first save")
+
+    print(f"Loaded {len(image_stems)} pages from {project_dir}")
+    print(f"Open http://{HOST}:{PORT}")
+
+    app = create_app(images_dir, output_dir)
+    uvicorn.run(app, host=HOST, port=PORT)
+
+
+if __name__ == "__main__":
+    main()
