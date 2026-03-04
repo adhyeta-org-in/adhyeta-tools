@@ -12,8 +12,8 @@ import sys
 MODEL_BASE = os.environ.get(
     "MODEL_BASE", "/path/to/your/gguf/dir"
 )  # Change this to your actual path
-MODEL = f"{MODEL_BASE}/Qwen3VL-8B-Instruct-Q8_0.gguf"
-MM_PROJ = f"{MODEL_BASE}/mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf"
+MODEL = f"{MODEL_BASE}/Qwen3.5-9B-UD-Q6_K_XL.gguf"
+MM_PROJ = f"{MODEL_BASE}/mmproj-F32-Qwen3.5-9B-UD-Q6_K_XL.gguf"
 DEVICE = "Vulkan0"
 HOST = "127.0.0.1"
 PORT = 5001
