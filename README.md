@@ -2,16 +2,23 @@
 
 This project provides various tools used for proofreading and other activities.
 
-## llm-proof
+## Installation
 
-Contains the following tools.
+- Clone the repo
+- Install `uv` (https://docs.astral.sh/uv/)
+- Install `adhyeta-tools` using `uv tool install --editable .`
+- This should give you access to the `adhyeta-tools` command globally depending on how your PATH is set up.
+- **Note**: The tool presumes a Linux environment.
+- **Note**: llama-cpp (https://github.com/ggml-org/llama.cpp) must be installed on your system to make use of the OCR capabilities.
 
-`extract-pdf` extracts flattened images from a given pdf file
+## Available Tools
 
-`start-llamacpp` starts a llama-cpp server using provided parameters.
+`extract` extracts flattened images from a given pdf file
 
-`start-ocr` performs OCR of the extracted images using a model running on llama-cpp.
+`llm serve` starts a llama-cpp server using provided parameters.
 
-`start-reader` opens a proofreader UI in your browser.
+`llm ocr` performs OCR of the extracted images using a model running on llama-cpp.
 
-In each of the tools, look at the `TUNABLE CONFIG` section to modify stuff that cannot be tuned via the cli.
+`proof` opens a proofreader UI in your browser.
+
+The app creates a `$XDG_CONFIG_HOME/adhyeta/tools.config.toml` file on startup with default values. Change them according to your environment.
