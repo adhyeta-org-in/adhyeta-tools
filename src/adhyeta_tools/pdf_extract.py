@@ -1,19 +1,7 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.14"
-# dependencies = [
-#   "pymupdf",
-#   "Pillow",
-#   "opencv-python",
-#   "numpy",
-#   "scikit-image",
-# ]
-# ///
 # SPDX-License-Identifier: MPL-2.0
 
 import io
 import math
-import sys
 from dataclasses import dataclass
 from multiprocessing import cpu_count, get_context
 from pathlib import Path
@@ -25,7 +13,7 @@ from PIL import Image
 
 
 @dataclass
-class Config:
+class ImageConfig:
     dpi: int
     max_width: int
     crop: int
@@ -56,10 +44,7 @@ def text_detection(pil_img_rgb, page_num):
             x, y, w, h = cv2.boundingRect(region)
             aspect_ratio = w / float(h)
             if (
-                20 < w < 1200
-                and 10 < h < 100
-                and 0.2 < aspect_ratio < 3.0
-                and len(region) > 30
+                20 < w < 1200 and 10 < h < 100 and 0.2 < aspect_ratio < 3.0 and len(region) > 30
             ):  # Enough pixels for text
                 cv2.rectangle(text_mask, (x, y), (x + w, y + h), 255, -1)
 
@@ -126,7 +111,7 @@ def compute_tokens(pil_img):
     return math.ceil((pil_img.width / 32) * (pil_img.height / 32) + 2)
 
 
-def process_pix_data(parent: str, page_num: int, img_data: bytearray, c: Config):
+def process_pix_data(parent: str, page_num: int, img_data: bytearray, c: ImageConfig):
     pil_img = Image.open(io.BytesIO(img_data))
 
     pil_img = pil_img.crop(
@@ -155,52 +140,14 @@ def process_pix_data(parent: str, page_num: int, img_data: bytearray, c: Config)
     output_path = f"{parent}/{page_num + 1:03d}.png"
     pil_img.save(output_path, optimize=True, compress_level=9)
 
-    print(
-        f"Saved page {page_num + 1}: {pil_img.size}px ({compute_tokens(pil_img)} toks)"
-    )
+    print(f"Saved page {page_num + 1}: {pil_img.size}px ({compute_tokens(pil_img)} toks)")
 
 
-def process_pix_data_simple(parent: str, page_num: int, img_data: bytearray, c: Config):
+def process_pix_data_simple(parent: str, page_num: int, img_data: bytearray, c: ImageConfig):
     pil_img = Image.open(io.BytesIO(img_data))
     output_path = f"{parent}/{page_num + 1:03d}.png"
     pil_img.save(output_path, optimize=True, compress_level=9)
-    print(
-        f"Saved page {page_num + 1}: {pil_img.size}px ({compute_tokens(pil_img)} toks)"
-    )
-
-
-def parse_args():
-    import argparse
-
-    parser = argparse.ArgumentParser(description="PDF to optimized PNGs for OCR")
-    parser.add_argument("input", type=Path, help="Input PDF file")
-    parser.add_argument(
-        "--dpi", type=int, default=300, help="DPI for rendering (default: 300)"
-    )
-    parser.add_argument(
-        "--max-width",
-        type=int,
-        default=1536,
-        help="Maximum output width in pixels (default: 1536)",
-    )
-    parser.add_argument(
-        "--crop",
-        type=int,
-        default=0,
-        help="Margin to crop in pixels (default: 0)",
-    )
-    parser.add_argument(
-        "--simple",
-        action="store_true",
-        help="Use `simple` mode",
-    )
-    parser.add_argument(
-        "--skip", default="", help="Pages to skip: '1,3-5,10,37-' (1-based)"
-    )
-    try:
-        return parser.parse_args()
-    except SystemExit:
-        sys.exit(1)
+    print(f"Saved page {page_num + 1}: {pil_img.size}px ({compute_tokens(pil_img)} toks)")
 
 
 def parse_skip_pages(skip: str, max: int):
@@ -227,10 +174,8 @@ def parse_skip_pages(skip: str, max: int):
     return q
 
 
-def main():
-    args = parse_args()
-
-    c = Config(args.dpi, args.max_width, args.crop)
+def process(args):
+    c = ImageConfig(args.dpi, args.max_width, args.crop)
 
     file = args.input
     parent = str(Path(file).parent)
@@ -247,9 +192,7 @@ def main():
         print("Extracting page pixmaps... Simple Mode. DPI/MAX-WIDTH/CROP ignored")
         fn = process_pix_data_simple
     else:
-        print(
-            f"Extracting page pixmaps... (dpi: {c.dpi}, max-width: {c.max_width}, crop: {c.crop}px)"
-        )
+        print(f"Extracting page pixmaps... (dpi: {c.dpi}, max-width: {c.max_width}, crop: {c.crop}px)")
         fn = process_pix_data
 
     skip = parse_skip_pages(args.skip, pages_n)
@@ -268,7 +211,4 @@ def main():
 
     with get_context("spawn").Pool(processes=cpu_count() - 1) as pool:
         pool.starmap(fn, page_pix_data)
-
-
-if __name__ == "__main__":
-    main()
+    return 0

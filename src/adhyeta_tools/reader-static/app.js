@@ -2,6 +2,7 @@
 
 const state = {
     pages: [],
+    session: '',  // holds cache-bust token from /pages
     index: 0,
     leftIsImage: true,
 
@@ -279,7 +280,8 @@ function indexForStem(stem) {
 
 // ── Render panels ─────────────────────────────────────────────────────────────
 function renderPanels(stem, textContent) {
-    const imgHTML = `<img class="page-image" src="/image/${stem}" alt="Page ${stem}" draggable="false" />`;
+    const v = state.session ? `?v=${encodeURIComponent(state.session)}` : '';
+    const imgHTML = `<img class="page-image" src="/image/${stem}${v}" alt="Page ${stem}" draggable="false" />`;
     const txtHTML = `<textarea id="editor" spellcheck="false">${escHtml(
         textContent ?? ''
     )}</textarea>`;
@@ -541,8 +543,9 @@ btnSave.addEventListener('click', () => save({ reason: 'manual' }));
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async () => {
     try {
-        const { pages } = await fetch('/pages', { cache: 'no-store' }).then((r) => r.json());
+        const { pages, session } = await fetch('/pages', { cache: 'no-store' }).then((r) => r.json());
         state.pages = pages || [];
+        state.session = session || '';
 
         if (!state.pages.length) {
             panelA.innerHTML =

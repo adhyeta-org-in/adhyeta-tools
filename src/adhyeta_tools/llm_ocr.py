@@ -1,17 +1,6 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.14"
-# dependencies = [
-#   "requests",
-#   "pillow",
-# ]
-# ///
 # SPDX-License-Identifier: MPL-2.0
-
-import argparse
 import base64
 import io
-import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -20,12 +9,7 @@ from pathlib import Path
 import requests
 from PIL import Image
 
-# ########################################
-# TUNABLE CONFIG
-# ########################################
-SERVER = "http://127.0.0.1:5001"
-PROMPT = "Extract all text from this page. Sanskrit (in Devanagari script) as well as English etc. Ignore all pictures."
-# ########################################
+from adhyeta_tools.config import Config
 
 start_time = time.time()
 completed_times = []
@@ -59,7 +43,7 @@ def fmt_t(n):
     return f"{n:.1f}s"
 
 
-def ocr_image(image_path: Path) -> TaskResponse:
+def ocr_image(image_path: Path, cfg: Config) -> TaskResponse:
     with Image.open(image_path) as img:
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
@@ -74,7 +58,7 @@ def ocr_image(image_path: Path) -> TaskResponse:
                         "type": "image_url",
                         "image_url": {"url": f"data:image/png;base64,{img_b64}"},
                     },
-                    {"type": "text", "text": PROMPT},
+                    {"type": "text", "text": cfg.prompt},
                 ],
             }
         ]
@@ -82,7 +66,7 @@ def ocr_image(image_path: Path) -> TaskResponse:
 
     resp_start = time.time()
 
-    resp = requests.post(f"{SERVER}/v1/chat/completions", json=payload).json()
+    resp = requests.post(f"http://{cfg.llm_host}:{cfg.llm_port}/v1/chat/completions", json=payload).json()
     out_path = Path(output_dir) / f"{image_path.stem}.md"
 
     return TaskResponse(
@@ -100,11 +84,11 @@ def ocr_image(image_path: Path) -> TaskResponse:
     )
 
 
-def run_job(images: list, parallel: int):
+def run_job(images: list, parallel: int, cfg: Config):
     global first_result_time
     with ThreadPoolExecutor(max_workers=parallel) as executor:
         # Submit all tasks and track by future
-        future_to_image = {executor.submit(ocr_image, img): img for img in images}
+        future_to_image = {executor.submit(ocr_image, img, cfg): img for img in images}
 
         last_result_time = None
 
@@ -159,67 +143,24 @@ def print_final():
     print(f"📊 Total images processed: {total_images}")
     print(f"⏱️ Time to first result: {fmt_t(first_result_time - start_time)}")
     print(f"📈 Average time per image: {fmt_t(total_time / total_images)}")
-    print(
-        f"📉 Average processing time (API call only): {fmt_t(sum(processing_times) / len(processing_times))}"
-    )
+    print(f"📉 Average processing time (API call only): {fmt_t(sum(processing_times) / len(processing_times))}")
     print(f"⚡ Total wall clock time: {fmt_t(total_time)}")
     print(f"🚀 Effective throughput: {total_images / total_time:.2f} images/sec")
 
     # Calculate deltas between completions
     if len(completed_times) > 1:
-        deltas = [
-            completed_times[i] - completed_times[i - 1]
-            for i in range(1, len(completed_times))
-        ]
+        deltas = [completed_times[i] - completed_times[i - 1] for i in range(1, len(completed_times))]
         print(
             f"📊 Delta stats: min={fmt_t(min(deltas))}, max={fmt_t(max(deltas))}, avg={fmt_t(sum(deltas) / len(deltas))}"
         )
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Perform OCR")
-
-    parser.add_argument(
-        "--parallel",
-        type=int,
-        default=4,
-        help="Number of parallel threads (default: 4)",
-    )
-
-    parser.add_argument(
-        "--input-dir",
-        required=True,
-        type=str,
-        help="Directory where images are stored",
-    )
-
-    parser.add_argument(
-        "--output-dir",
-        required=True,
-        type=str,
-        help="Directory where text files will be stored",
-    )
-
-    try:
-        return parser.parse_args()
-    except SystemExit:
-        sys.exit(1)
-
-
-def main():
-    args = parse_args()
-
+def process(args, cfg: Config):
     # Only process images without  corresponding .md files
-    texts = [
-        x.stem
-        for x in list(Path(args.output_dir).glob("**/*"))
-        if x.suffix in ".md".split(" ")
-    ]
+    texts = [x.stem for x in list(Path(args.output_dir).glob("**/*")) if x.suffix in ".md".split(" ")]
 
     images = [
-        x
-        for x in list(Path(args.input_dir).glob("**/*"))
-        if x.suffix in ".png .jpg".split(" ") and x.stem not in texts
+        x for x in list(Path(args.input_dir).glob("**/*")) if x.suffix in ".png .jpg".split(" ") and x.stem not in texts
     ]
 
     global total_images
@@ -230,11 +171,8 @@ def main():
     if not total_images:
         print(f"no images found in {args.input_dir}")
     else:
-        print(
-            f"Processing {total_images} images with {args.parallel} concurrent workers"
-        )
-        run_job(images, args.parallel)
+        cfg.prompt = args.prompt if args.prompt else cfg.prompt
+        print(f"Processing {total_images} images with {args.parallel} concurrent workers")
+        run_job(images, args.parallel, cfg)
         print_final()
-
-
-main()
+    return 0

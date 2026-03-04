@@ -1,16 +1,6 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.14"
-# dependencies = [
-#   "starlette",
-#   "uvicorn",
-#   "aiofiles",
-# ]
-# ///
 # SPDX-License-Identifier: MPL-2.0
-
-import argparse
 import sys
+import uuid
 from pathlib import Path
 
 import aiofiles
@@ -21,13 +11,18 @@ from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
+from adhyeta_tools.config import Config
+
 STATIC_DIR = Path(__file__).parent / "reader-static"
 IMAGE_EXTS = (".jpg", ".jpeg", ".png")
-HOST = "127.0.0.1"
-PORT = 5003
+HTTP_HEADERS = {"Cache-Control": "no-cache"}
+SESSION_TOKEN = uuid.uuid4().hex
 
 
 def create_app(images_dir: Path, output_dir: Path) -> Starlette:
+
+    def uncached_json_response(x):
+        return JSONResponse(x, headers=HTTP_HEADERS)
 
     def get_image_path(stem: str) -> Path | None:
         for ext in IMAGE_EXTS:
@@ -37,9 +32,7 @@ def create_app(images_dir: Path, output_dir: Path) -> Starlette:
         return None
 
     def get_sorted_stems() -> list[str]:
-        return sorted(
-            p.stem for p in images_dir.iterdir() if p.suffix.lower() in IMAGE_EXTS
-        )
+        return sorted(p.stem for p in images_dir.iterdir() if p.suffix.lower() in IMAGE_EXTS)
 
     _stems_cache: list[str] | None = None
 
@@ -50,7 +43,7 @@ def create_app(images_dir: Path, output_dir: Path) -> Starlette:
         return _stems_cache
 
     async def pages(request: Request):
-        return JSONResponse({"pages": stems()})
+        return uncached_json_response({"pages": stems(), "session": SESSION_TOKEN})
 
     async def get_image(request: Request):
         stem = request.path_params["stem"]
@@ -63,10 +56,10 @@ def create_app(images_dir: Path, output_dir: Path) -> Starlette:
         stem = request.path_params["stem"]
         md_path = output_dir / f"{stem}.md"
         if not md_path.exists():
-            return JSONResponse({"content": ""})
+            return uncached_json_response({"content": ""})
         async with aiofiles.open(md_path, "r", encoding="utf-8") as f:
             content = await f.read()
-        return JSONResponse({"content": content})
+        return uncached_json_response({"content": content})
 
     async def save_text(request: Request):
         stem = request.path_params["stem"]
@@ -77,7 +70,7 @@ def create_app(images_dir: Path, output_dir: Path) -> Starlette:
         md_path = output_dir / f"{stem}.md"
         async with aiofiles.open(md_path, "w", encoding="utf-8") as f:
             await f.write(content)
-        return JSONResponse({"ok": True})
+        return uncached_json_response({"ok": True})
 
     routes = [
         Route("/pages", pages),
@@ -90,12 +83,7 @@ def create_app(images_dir: Path, output_dir: Path) -> Starlette:
     return Starlette(routes=routes)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Proofreader")
-    parser.add_argument("project", type=Path, help="Path to project directory")
-    args = parser.parse_args()
-
-    project_dir = args.project.resolve()
+def process(project_dir: Path, cfg: Config):
     images_dir = project_dir / "images"
     output_dir = project_dir / "output"
 
@@ -108,21 +96,14 @@ def main():
             print(f"Error: {name} directory not found: {d}", file=sys.stderr)
             sys.exit(1)
 
-    image_stems = sorted(
-        p.stem
-        for p in images_dir.iterdir()
-        if p.suffix.lower() in (".jpg", ".jpeg", ".png")
-    )
+    image_stems = sorted(p.stem for p in images_dir.iterdir() if p.suffix.lower() in (".jpg", ".jpeg", ".png"))
     for stem in image_stems:
         if not (output_dir / f"{stem}.md").exists():
             print(f"Warning: no .md for {stem} — will be created on first save")
 
     print(f"Loaded {len(image_stems)} pages from {project_dir}")
-    print(f"Open http://{HOST}:{PORT}")
+    print(f"Open {cfg.proof_host}:{cfg.proof_port}")
 
     app = create_app(images_dir, output_dir)
-    uvicorn.run(app, host=HOST, port=PORT)
-
-
-if __name__ == "__main__":
-    main()
+    uvicorn.run(app, host=cfg.proof_host, port=cfg.proof_port)
+    return 0

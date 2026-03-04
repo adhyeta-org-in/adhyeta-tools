@@ -1,0 +1,27 @@
+[project]
+name = "adhyeta-tools"
+version = "0.1.0"
+description = "Simple LLM-assisted tooling for proofreading texts"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+  "pymupdf",
+  "requests",
+  "pillow",
+  "opencv-python",
+  "numpy",
+  "scikit-image",
+  "starlette",
+  "uvicorn",
+  "aiofiles",
+]
+
+[tool.ruff]
+line-length = 120
+
+[project.scripts]
+adhyeta-tools = "adhyeta_tools.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.9.4,<0.10.0"]
+build-backend = "uv_build"
