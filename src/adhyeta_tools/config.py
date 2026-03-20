@@ -8,11 +8,11 @@ from pathlib import Path
 class Config:
     # reader
     proof_host = "127.0.0.1"
-    proof_port = 5003
+    proof_port = 6002
 
     # llm-serve
     llm_host = "127.0.0.1"
-    llm_port = 5001
+    llm_port = 6001
     model_path = "/path/to/your/model.gguf"
     mmproj_path = "/path/to/your/mmproj.gguf"
     device = "Vulkan0"
@@ -26,7 +26,7 @@ class Config:
 def load_config() -> Config:
     xdg_config_dir = Path(os.environ["XDG_CONFIG_HOME"]) / "adhyeta"
     dotenv_toml_path = Path(os.path.dirname(__file__)).parent / ".env"
-    config_toml = xdg_config_dir / "tools.config.toml"
+    config_toml = xdg_config_dir / "tools" / "config.toml"
     path = dotenv_toml_path if dotenv_toml_path.exists() else config_toml
 
     if not dotenv_toml_path.exists() and not config_toml.exists():
