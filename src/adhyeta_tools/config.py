@@ -24,9 +24,9 @@ class Config:
 
 
 def load_config() -> Config:
-    xdg_config_dir = Path(os.environ["XDG_CONFIG_HOME"]) / "adhyeta"
+    xdg_config_dir = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "adhyeta" / "tools"
     dotenv_toml_path = Path(os.path.dirname(__file__)).parent / ".env"
-    config_toml = xdg_config_dir / "tools" / "config.toml"
+    config_toml = xdg_config_dir / "config.toml"
     path = dotenv_toml_path if dotenv_toml_path.exists() else config_toml
 
     if not dotenv_toml_path.exists() and not config_toml.exists():
