@@ -21,4 +21,4 @@ This project provides various tools used for proofreading and other activities.
 
 `proof` opens a proofreader UI in your browser.
 
-The app creates a `$XDG_CONFIG_HOME/adhyeta/tools.config.toml` file on startup with default values. Change them according to your environment.
+The app creates a `$XDG_CONFIG_HOME/adhyeta/tools/config.toml` file on startup with default values. Change them according to your environment.
