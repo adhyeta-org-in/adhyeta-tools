@@ -137,7 +137,7 @@ def process_pix_data(parent: str, page_num: int, img_data: bytearray, c: ImageCo
     pil_img = clahe(pil_img)
 
     # Save optimized PNG
-    output_path = f"{parent}/{page_num + 1:03d}.png"
+    output_path = f"{parent}/{page_num + 1:04d}.png"
     pil_img.save(output_path, optimize=True, compress_level=9)
 
     print(f"Saved page {page_num + 1}: {pil_img.size}px ({compute_tokens(pil_img)} toks)")
@@ -145,7 +145,7 @@ def process_pix_data(parent: str, page_num: int, img_data: bytearray, c: ImageCo
 
 def process_pix_data_simple(parent: str, page_num: int, img_data: bytearray, c: ImageConfig):
     pil_img = Image.open(io.BytesIO(img_data))
-    output_path = f"{parent}/{page_num + 1:03d}.png"
+    output_path = f"{parent}/{page_num + 1:04d}.png"
     pil_img.save(output_path, optimize=True, compress_level=9)
     print(f"Saved page {page_num + 1}: {pil_img.size}px ({compute_tokens(pil_img)} toks)")
 

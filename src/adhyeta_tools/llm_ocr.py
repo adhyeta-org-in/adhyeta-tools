@@ -159,9 +159,11 @@ def process(args, cfg: Config):
     # Only process images without  corresponding .md files
     texts = [x.stem for x in list(Path(args.output_dir).glob("**/*")) if x.suffix in ".md".split(" ")]
 
-    images = [
-        x for x in list(Path(args.input_dir).glob("**/*")) if x.suffix in ".jp2 .jpg .jpeg .png".split(" ") and x.stem not in texts
-    ]
+    images = sorted(
+        x
+        for x in list(Path(args.input_dir).glob("**/*"))
+        if x.suffix in ".jp2 .jpg .jpeg .png".split(" ") and x.stem not in texts
+    )
 
     global total_images
     total_images = len(images)
