@@ -40,6 +40,30 @@ def main():
     )
     extract.add_argument("--skip", default="", help="Pages to skip: '1,3-5,10,37-' (1-based)")
 
+    convert = add_parser(subparsers, "convert", "TIFFs to optimized PNGs for OCR")
+    convert.add_argument(
+        "input_dir",
+        type=Path,
+        help="Directory where source images are stored",
+    )
+    convert.add_argument(
+        "output_dir",
+        type=Path,
+        help="Directory where target images are stored",
+    )
+    convert.add_argument(
+        "--crop",
+        type=int,
+        default=0,
+        help="Margin to crop in pixels (default: 0)",
+    )
+    convert.add_argument(
+        "--max-width",
+        type=int,
+        default=1536,
+        help="Maximum output width in pixels (default: 1536)",
+    )
+
     llm = add_parser(subparsers, "llm", "LLM-related operations (choose a subcommand)")
     llm_sub = llm.add_subparsers(dest="llm_command", required=True)
 
@@ -94,6 +118,10 @@ def main():
         return process(args.project.resolve(), cfg)
     elif args.command == "extract":
         from adhyeta_tools.pdf_extract import process
+
+        return process(args)
+    elif args.command == "convert":
+        from adhyeta_tools.tiff_convert import process
 
         return process(args)
     elif args.command == "llm":
