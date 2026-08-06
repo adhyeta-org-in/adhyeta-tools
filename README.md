@@ -13,7 +13,9 @@ This project provides various tools used for proofreading and other activities.
 
 ## Available Tools
 
-`extract` extracts flattened images from a given pdf file
+`extract` extracts flattened images from a given pdf file. Used when input is a PDF
+
+`convert` takes a directory of TIF images and produces resized PNGs. Used when input is a set of TIF files
 
 `llm serve` starts a llama-cpp server using provided parameters.
 
