@@ -76,11 +76,11 @@ def ocr_image(image_path: Path, cfg: Config) -> TaskResponse:
         processing_time=elapsed_ts(resp_start),
         total_time=int(time.time() - start_time),
         completed_at=int(time.time()),
-        text=resp["choices"][0]["message"]["content"],
-        finish_reason=resp["choices"][0]["finish_reason"],
-        prompt_tokens=resp["usage"].get("prompt_tokens", 0),
-        output_tokens=resp["usage"].get("completion_tokens", 0),
-        total_tokens=resp["usage"].get("total_tokens", 0),
+        text=resp.get("choices", [{}])[0].get("message", {}).get("content", ""),
+        finish_reason=resp.get("choices", [{}])[0].get("finish_reason", ""),
+        prompt_tokens=resp.get("usage", {}).get("prompt_tokens", 0),
+        output_tokens=resp.get("usage", {}).get("completion_tokens", 0),
+        total_tokens=resp.get("usage", {}).get("total_tokens", 0),
     )
 
 
@@ -112,12 +112,12 @@ def run_job(images: list, parallel: int, cfg: Config):
 
             # Show progress - using throughput-based ETA
             throughput = i / (current_time - start_time)  # jobs per second
-            eta = (total_images - i) / throughput
+            eta = (total_images - i) / throughput / 60
             global last_eta
             eta = min(eta, last_eta if last_eta else eta)
             last_eta = eta
 
-            log = f"{i}/{total_images} | ETA: {int(eta)}s | {result.image_name} -> {result.md_name} {time_stats}"
+            log = f"{i}/{total_images} | ETA: {int(eta)}m | {result.image_name} -> {result.md_name} {time_stats}"
 
             # Check for truncation using finish_reason
             if result.finish_reason == "length":
@@ -156,7 +156,7 @@ def print_final():
 
 
 def process(args, cfg: Config):
-    # Only process images without  corresponding .md files
+    # Only process images without corresponding .md files
     texts = [x.stem for x in list(Path(args.output_dir).glob("**/*")) if x.suffix in ".md".split(" ")]
 
     images = sorted(
